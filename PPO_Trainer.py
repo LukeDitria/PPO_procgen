@@ -5,8 +5,9 @@ import time
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import Helpers.Helper_Functions as hf
 from collections import deque
+
+import Helpers.Helper_Functions as hf
 
 class PpoTrainer():
     def __init__(self, args, actor_critic):
@@ -92,7 +93,6 @@ class PpoTrainer():
             entropy = new_dist.entropy().mean()
 
             ########### Policy Gradient update for actor with clipping - PPO #############
-
             # Work out the probability (log probability) that the agent will NOW take
             # the action it took during the rollout
             # We assume there has been some optimisation steps between when the action was taken and now so the
@@ -104,7 +104,7 @@ class PpoTrainer():
             # exp(log(new_prob/old_prob)) = new_prob/old_prob
             ratio = (new_log_probs - data_batch["log_probs"]).exp()
 
-            # We want to MAXIMISE the (Advantages X Ratio)
+            # We want to MAXIMISE the (Advantage X Ratio)
             # If the advantage is positive this corresponds to INCREASING the probability of taking that action
             # If the advantage is negative this corresponds to DECREASING the probability of taking that action
             surr1 = ratio * data_batch["advantages"]
@@ -115,10 +115,10 @@ class PpoTrainer():
             # EG: If we want to decrease the probability of taking an action but the new action probability
             # is now higher than it was before we can take a larger update step to correct this
             #
-            # PPO goes a bit further, as if we simply update update the Advantages X Ratio we will sometimes
+            # PPO goes a bit further, as if we simply update update the Advantage X Ratio we will sometimes
             # get very large or very small policy updates when we don't want them
             # EG1: If we want to increase the probability of taking an action but the new action probability
-            # is now higher than it was before we will also take a larger step, however if the action probability is
+            # is now higher than it was before we will take a larger step, however if the action probability is
             # already higher we don't need to keep increasing it
             #
             # EG2: You can also consider the opposite case where we want to decrease the action probability
@@ -132,15 +132,17 @@ class PpoTrainer():
             actor_loss = torch.min(surr1, surr2).mean()
 
             ########### Value Function update for critic with clipping #############
-            # We can do a similar thing for the value function update if the new value function estimate is close to
+            # We can do a similar thing for the value function update, if the new value function estimate is close to
             # the returns we don't have to do as big an update
             vf_loss1 = (new_value - data_batch["returns"]).pow(2.)
             vpredclipped = data_batch["values"] + torch.clamp(new_value - data_batch["values"], -clip_param, clip_param)
             vf_loss2 = (vpredclipped - data_batch["returns"]).pow(2.)
             critic_loss = torch.max(vf_loss1, vf_loss2).mean()
 
-            # These techniques allow us to do multiple update steps without "over-fitting" to a single batch of
-            # observations etc, RL boot-straps itself and so the "ground truth" targets (if you can call them that) will
+            # These techniques allow us to do multiple epochs of our data without huge update steps throwing off our
+            # policy/value function (gradient explosion etc).
+            # It can also help prevent "over-fitting" to a single batch of observations etc, 
+            # RL boot-straps itself and the noisy "ground truth" targets (if you can call them that) will
             # shift overtime and we need to make sure our actor-critic can quickly adapt, over-fitting to a single batch
             # of observations will prevent that
             agent_loss = critic_loss - actor_loss - self.args.ent_loss * entropy
@@ -157,8 +159,6 @@ class PpoTrainer():
 
     def segment_rollout(self, states, actions, rewards, values, returns, log_probs):
         # Turn deque to list and concat the tensors along the batch dimension
-        # need to do it like this as when tensors are first added to the list
-        # during the rollout they are batched at each time step with other environments
 
         new_data = {"states": torch.cat(list(states)),
                     "actions": torch.cat(list(actions)),
@@ -167,6 +167,8 @@ class PpoTrainer():
                     "values": torch.cat(list(values)),
                     "log_probs": torch.cat(list(log_probs))
                     }
+        
+        # Add to the data buffer
         self.data_buffer_transfer(new_data)
 
     def data_buffer_transfer(self, new_data):
@@ -250,7 +252,6 @@ class PpoTrainer():
 
             print("Training")
             self.ppo_net.train()  # Set to train mode - doesn't do anything for Impala CNN
-            print(len(self.data_buffer))
 
             for _ in range(self.args.ppo_epochs):  # Perform training epochs
                 self.ppo_update()
