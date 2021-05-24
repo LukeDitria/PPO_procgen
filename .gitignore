@@ -5,8 +5,7 @@ Videos/
 .ipynb_checkpoints/
 .idea/
 
-RSVP_runner-Copy?.ipynb
-LossPlotter_RSVP-Copy?.ipynb
+*.ipynb
 *.png
 *.jpg
 
