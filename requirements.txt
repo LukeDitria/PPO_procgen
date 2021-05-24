@@ -1,0 +1,7 @@
+gym==0.16.0
+gym3==0.3.3
+opencv-python==4.1.0.25
+pandas==0.24.2
+procgen==0.10.4
+torch==1.4.0
+torchvision==0.5.0

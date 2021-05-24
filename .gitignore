@@ -1,0 +1,12 @@
+__pycache__/
+Models/
+Plots/
+Videos/
+.ipynb_checkpoints/
+.idea/
+
+RSVP_runner-Copy?.ipynb
+LossPlotter_RSVP-Copy?.ipynb
+*.png
+*.jpg
+
