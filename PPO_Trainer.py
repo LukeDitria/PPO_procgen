@@ -26,8 +26,10 @@ class PpoTrainer():
         self.loss_logger = {"critic": [], "actor": [], "actor_entropy": []}
 
         # Create a file save name and save path
-        self.exp_name = self.args.env_name + "_PPO_" + self.args.save_name + str(self.args.num_levels) + "_" +\
-                        self.args.dist_mode + "_200M_" + str(self.args.exp_indx)
+        # Create a file save name and save path
+        self.exp_name = self.args.env_name + "_PPO_" + self.args.save_name + str(self.args.num_levels) + "_" + \
+                        self.args.dist_mode + "_" + str(int(self.args.max_frames // 1e6)) + "M_" + str(
+            self.args.exp_indx)
         self.save_path = os.path.join(self.args.save_dir + "/Models", self.exp_name + ".pt")
 
         # Create the data buffer
@@ -40,7 +42,7 @@ class PpoTrainer():
         self.ppo_net = actor_critic(self.args.state_history*3, self.args.num_acts, self.args.width).to(self.device)
         self.ppo_optimizer = optim.Adam(self.ppo_net.parameters(), lr=self.args.lr)
 
-        # Load checkpoint if load_checkpoint fag is set
+        # Load checkpoint if load_checkpoint flag is set
         if self.args.load_checkpoint:
             self.load_checkpoint()
         else:
@@ -260,7 +262,7 @@ class PpoTrainer():
             # print time to completion estimate
             time_to_end = ((time.time() - start_of_time) / self.frame_indx) * (self.args.max_frames - self.frame_indx)
             print("Frames: [%d/%d]" % (self.frame_indx, self.args.max_frames))
-            print("Time to end: %.2f" % (time_to_end / 3600))
+            print("Time to end: %dh:%dm" % (time_to_end // 3600, (time_to_end % 3600) // 60))
 
             # Save checkpoint
             with lock:

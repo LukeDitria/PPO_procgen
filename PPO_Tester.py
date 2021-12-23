@@ -15,8 +15,10 @@ class PpoTester():
         self.device = torch.device(self.args.gpu if torch.cuda.is_available() else "cpu")
         self.ppo_net = actor_critic(self.args.state_history*3, self.args.num_acts, self.args.width).to(self.device)
 
-        self.exp_name = self.args.env_name + "_PPO_" + self.args.save_name + str(self.args.num_levels) +\
-                        "_" + self.args.dist_mode + "_200M_" + str(self.args.exp_indx)
+        # Create a file save name and save path
+        self.exp_name = self.args.env_name + "_PPO_" + self.args.save_name + str(self.args.num_levels) + "_" + \
+                        self.args.dist_mode + "_" + str(int(self.args.max_frames // 1e6)) + "M_" + str(
+            self.args.exp_indx)
 
         self.save_path = os.path.join(self.args.save_dir + "/Models", self.exp_name + ".pt")
         self.save_data_path = os.path.join(self.args.save_dir + "/Data", self.exp_name)
