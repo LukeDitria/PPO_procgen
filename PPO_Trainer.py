@@ -204,13 +204,9 @@ class PpoTrainer():
         rewards = deque()
         masks = deque()
         step = 0
-        done = np.zeros(self.args.num_envs)
 
         with torch.no_grad():  # Don't need computational graph for roll-outs
             while step < self.args.num_steps:
-                #  Masks so we can separate out multiple games in the same environment
-                current_mask = torch.FloatTensor(1 - done).unsqueeze(1).to(self.device)
-                masks.append(current_mask)
 
                 dist, value = self.ppo_net(state)  # Forward pass of actor-critic model
                 action = dist.sample()  # Sample action from distribution
@@ -232,6 +228,10 @@ class PpoTrainer():
 
                 state = hf.state_to_tensor(next_state, self.device)
                 step += 1
+
+                #  Masks so we can separate out multiple games in the same environment
+                current_mask = torch.FloatTensor(1 - done).unsqueeze(1).to(self.device)
+                masks.append(current_mask)
 
             # Get value at time step T+1
             _, next_value = self.ppo_net(state)
